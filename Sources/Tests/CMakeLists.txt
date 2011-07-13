@@ -1,0 +1,7 @@
+find_package(GTest REQUIRED)
+file(GLOB_RECURSE TEST_SRCS "*Test.cpp")
+link_directories(${Boost_LIBRARY_DIRS} ${GTEST_LIBRARY_DIR})
+add_executable(unittest-all ${TEST_SRCS})
+include_directories(${Boost_INCLUDE_DIR} ${GTEST_INCLUDE_DIR})
+target_link_libraries(unittest-all ${J2DRAGLINE_LIBS} ${GTEST_BOTH_LIBRARIES})
+gtest_add_tests(unittest-all ${TEST_SRCS})
