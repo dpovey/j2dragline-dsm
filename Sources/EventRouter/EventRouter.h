@@ -8,8 +8,8 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
-#ifndef _NEXUS_H
-#define _NEXUS_H
+#ifndef _EVENT_ROUTER_H
+#define _EVENT_ROUTER_H
 
 namespace j2 {
 
@@ -30,25 +30,25 @@ namespace j2 {
     typedef std::tr1::shared_ptr<Signal> SignalPtr;
     typedef std::map<std::string, SignalPtr> Subscriptions;
 
-    class Nexus;
+    class EventRouter;
 
-    template <typename T=boost::any, typename NEXUS = Nexus>
+    template <typename T=boost::any, typename EVENT_ROUTER = EventRouter>
     class Subscription {
     private:
         typedef std::vector<boost::signals::connection> connection_list;
     public:
 
-        Subscription(NEXUS& parent,
+        Subscription(EVENT_ROUTER& parent,
                      const std::string& name,
                      boost::signals::connection connection) :
-            _nexus(parent),
+            _event_router(parent),
             _name(name) { 
             _connections.push_back(connection);
         }
 
-        Subscription(NEXUS& parent,
+        Subscription(EVENT_ROUTER& parent,
                      const std::string& name) :
-            _nexus(parent),
+            _event_router(parent),
             _name(name) { }
         
         const std::string& name() const { return _name; }
@@ -67,7 +67,6 @@ namespace j2 {
         }        
 
         void block() { 
-            //boost::for_each(_connections.begin(), _connections.end(), _1->block());
             for (connection_list::iterator it = _connections.begin();
                  it != _connections.end();
                  it++) {
@@ -95,7 +94,7 @@ namespace j2 {
         template <typename DEST>
         Subscription& adapt(boost::function2<void, const boost::any, DEST> func,
                             DEST dest) {
-            SignalPtr signal = _nexus.signal_for(_name);
+            SignalPtr signal = _event_router.signal_for(_name);
             boost::signals::connection connection = 
                 signal->connect(boost::bind(func, _1, dest));
             _connections.push_back(connection);
@@ -103,21 +102,21 @@ namespace j2 {
         }
 
     private:
-        NEXUS& _nexus;
+        EVENT_ROUTER& _event_router;
         const std::string _name;
         std::vector<boost::signals::connection> _connections;
     };
 
-    class Nexus {
+    class EventRouter {
     public:
 
-        //static Nexus default();
+        //static EventRouter default();
     public:
         void publish(const std::string& name, const boost::any value);
 
         template <typename T>
         Subscription<T> subscribe(const std::string& name) {
-            return Subscription<T, Nexus>(*this, name);
+            return Subscription<T, EventRouter>(*this, name);
         }
 
         Subscription<> subscribe(const std::string& name, 
@@ -133,4 +132,4 @@ namespace j2 {
 
 } // namespace j2
 
-#endif // _NEXUS_H
+#endif // _EVENT_ROUTER_H

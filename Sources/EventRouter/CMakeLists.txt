@@ -1,5 +1,5 @@
 FILE(GLOB CPP_FILES "*.cpp")
 include_directories(${Boost_INCLUDE_DIR})
-add_library (Nexus ${CPP_FILES})
+add_library (EventRouter ${CPP_FILES})
 
 

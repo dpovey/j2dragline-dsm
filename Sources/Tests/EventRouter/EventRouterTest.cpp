@@ -1,6 +1,6 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include <Nexus.h>
+#include <EventRouter.h>
 
 using namespace j2;
 using namespace std;
@@ -16,21 +16,21 @@ void receive_int(boost::any value) {
    received_int = boost::any_cast<int>(value);
 }
 
-TEST(Nexus, can_pub_and_sub) {
-    Nexus nexus;
+TEST(EventRouter, can_pub_and_sub) {
+    EventRouter router;
     std::string EXPECTED_STRING = "Hello World";
     int EXPECTED_INT = 99;
     int byref;
     std::tr1::shared_ptr<int> shared_ptr_int(new int());
     std::string byref_string;
-    nexus.subscribe<std::string>("string").deliverResultWith(receive_string);
-    nexus.subscribe<std::string>("string").assignResultTo(&byref_string);
-    nexus.publish("string", EXPECTED_STRING);
-    nexus.subscribe<int>("int")
+    router.subscribe<std::string>("string").deliverResultWith(receive_string);
+    router.subscribe<std::string>("string").assignResultTo(&byref_string);
+    router.publish("string", EXPECTED_STRING);
+    router.subscribe<int>("int")
         .deliverResultWith(receive_int)
         .assignResultTo(&byref)
         .assignResultTo(shared_ptr_int);
-    nexus.publish("int", EXPECTED_INT); 
+    router.publish("int", EXPECTED_INT); 
     EXPECT_EQ(EXPECTED_STRING, received_string);
     EXPECT_EQ(EXPECTED_STRING, byref_string);
     EXPECT_EQ(EXPECTED_INT, received_int);
