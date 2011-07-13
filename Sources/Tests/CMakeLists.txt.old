@@ -1,0 +1,7 @@
+file(GLOB_RECURSIVE TEST_SRCS "*_unittest.cpp")
+target_link_libraries(gtest)
+foreach(test ${TEST_SRCS})
+  message(" ##### adding test ${test}")
+  get_filename_component(TEST_NAME ${test} NAME_WE)
+  add_test(${TEST_NAME} test ${TEST_NAME})
+endforeach(test)

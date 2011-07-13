@@ -1,0 +1,14 @@
+//
+//  config.h 
+//
+//  Created by Dean Povey on 2011-05-26
+//  Copyright (c) 2011 Leica Geosystems. All rights reserved.
+//
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+// Version
+#define J2DRAGLINE_VERSION_MAJOR @J2DRAGLINE_VERSION_MAJOR@
+#define J2DRAGLINE_VERSION_MINOR @J2DRAGLINE_VERSION_MINOR@
+
+#endif //_CONFIG_H
