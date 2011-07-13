@@ -23,13 +23,13 @@ TEST(EventRouter, can_pub_and_sub) {
     int byref;
     std::tr1::shared_ptr<int> shared_ptr_int(new int());
     std::string byref_string;
-    router.subscribe<std::string>("string").deliverResultWith(receive_string);
-    router.subscribe<std::string>("string").assignResultTo(&byref_string);
+    router.subscribe<std::string>("string").deliver_with(receive_string);
+    router.subscribe<std::string>("string").assign_to(&byref_string);
     router.publish("string", EXPECTED_STRING);
     router.subscribe<int>("int")
-        .deliverResultWith(receive_int)
-        .assignResultTo(&byref)
-        .assignResultTo(shared_ptr_int);
+        .deliver_with(receive_int)
+        .assign_to(&byref)
+        .assign_to(shared_ptr_int);
     router.publish("int", EXPECTED_INT); 
     EXPECT_EQ(EXPECTED_STRING, received_string);
     EXPECT_EQ(EXPECTED_STRING, byref_string);
