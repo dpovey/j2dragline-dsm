@@ -126,11 +126,8 @@ namespace j2 {
          * @see unblock
          **/
         void block() {
-            for (connection_list::iterator it = _connections.begin();
-                 it != _connections.end();
-                 it++) {
-                it->block();
-            }
+            std::for_each(_connections.begin(), _connections.end(),
+                          std::mem_fun(&boost::signals::connection::block));
         }
 
         /**
@@ -138,22 +135,16 @@ namespace j2 {
          * @see block
          **/
         void unblock() { 
-            for (connection_list::iterator it = _connections.begin();
-                 it != _connections.end();
-                 it++) {
-                it->unblock();
-            }
+            std::for_each(_connections.begin(), _connections.end(),
+                          std::mem_fun(&boost::signals::connection::unblock));
         }
 
         /**
          * @brief unsubscribe from events.
          **/
         void unsubscribe() { 
-            for (connection_list::iterator it = _connections.begin();
-                 it != _connections.end();
-                 it++) {
-                it->disconnect();
-            }
+            std::for_each(_connections.begin(), _connections.end(),
+                          std::mem_fun(&boost::signals::connection::disconnect));
         }
 
     private:

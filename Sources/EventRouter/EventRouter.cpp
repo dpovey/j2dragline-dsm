@@ -22,9 +22,8 @@ Subscription<> EventRouter::subscribe(const std::string& name,
 }
 
 SignalPtr EventRouter::signal_for(const std::string& name) {
-    std::map<std::string, SignalPtr>::iterator it = _subscriptions.find(name);
-    if (it != _subscriptions.end()) return it->second;
-    _subscriptions.insert(std::make_pair(name, SignalPtr(new Signal())));
-    return _subscriptions.find(name)->second;
+    SignalPtr result = _subscriptions[name];
+    if (result) return result;
+    return (_subscriptions[name] = SignalPtr(new Signal()));
 }
 
