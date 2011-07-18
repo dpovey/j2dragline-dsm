@@ -17,46 +17,43 @@ namespace j2 {
     
     class ModbusTcpMessage : public Serializable {
     public:
-        static ModbusTcpMessage outgoing(uint16_t transactionId, uint16_t unitId, 
-                                         const ModbusMessage& message);
+        ModbusTcpMessage() {
+            data = shared_buffer(new buffer);
+        }
 
-        static ModbusTcpMessage incoming(uint16_t transactionId, uint16_t unitId, 
-                                         ModbusMessage *message);
-
-        ModbusTcpMessage(ModbusMessage* message) :
-            messageIn(message),
-            messageOut(0)
-        { }
+        ModbusTcpMessage(uint16_t transactionId,
+                         uint16_t unitId,
+                         const ModbusMessage& message) :
+            transactionId(transactionId),
+            protocolId(0),
+            size(message.size()),
+            unitId(unitId),
+            functionCode(message.functionCode()),
+            data(new buffer()) {
+            data->reserve(message.size());
+            MemoryIoWriter writer(data);
+            message.serialize(writer);
+        }
             
         void serialize(IoWriter& writer) const {
-            assert(messageOut);
             writer
                 .write(transactionId)
                 .write(protocolId)
-                .write(uint16_t(messageOut->size()))
+                .write(size)
                 .write(unitId)
-                .write(uint8_t(messageOut->functionCode()))
-                .write(*messageOut);
+                .write(functionCode)
+                .write(*data);
         }
 
         void deserialize(IoReader& reader) {
-            assert(messageIn);
-            // reader
-            //     .read(transactionId)
-            //     .read(protocolId)
-            //     .read(size)
-            //     .read(unitId)
-            //     .read(functionCode)
-            //     .buffer(size)
-            //     .read(*messageIn);
             reader.read(&transactionId);
             reader.read(&protocolId);
             reader.read(&size);
             reader.read(&unitId);
             reader.read(&functionCode);
             reader.buffer(size);
-            reader.read(*messageIn);
-
+            data->reserve(size);
+            reader.read(*data, size);
 
             // TODO: Handle Modbus exceptions
 
@@ -67,55 +64,19 @@ namespace j2 {
             if (protocolId != 0) {
                 throw ModbusException("Invalid protocol id: " + protocolId);
             }
-
-            // TODO: Push into reader.errorIf()
-            if (messageIn->functionCode() != functionCode) {
-                throw ModbusException("Invalid message");
-            }
         }
 
-    protected:
-        // Incoming message
-        ModbusTcpMessage(uint16_t transactionId, uint16_t unitId, ModbusMessage* message) :
-            transactionId(transactionId),
-            protocolId(0),
-            size(message->size()),
-            unitId(unitId),
-            functionCode(message->functionCode()),
-            messageIn(message),
-            messageOut(0) 
-        { }
-
-        // Outgoing message
-        ModbusTcpMessage(uint16_t transactionId, uint16_t unitId, const ModbusMessage* message) :
-            transactionId(transactionId),
-            protocolId(0),
-            size(message->size()),
-            unitId(unitId),
-            functionCode(message->functionCode()),
-            messageIn(0),
-            messageOut(message)
-        { }
-
     public:
-        uint16_t transactionId;  // Unique transaction id
-        uint16_t protocolId;     // Must be zero for Modbus TCP
-        uint16_t size;           // Data size
-        uint16_t unitId;         // Unit id
-        uint8_t functionCode;    // function code
-        ModbusMessage* messageIn;
-        const ModbusMessage* messageOut;
+        uint16_t transactionId;     // Unique transaction id
+        uint16_t protocolId;        // Must be zero for Modbus TCP
+        uint8_t functionCode;       // function
+        uint16_t size;              // Data size
+        uint16_t unitId;            // Unit id
+        shared_buffer data;         // Message data
     };
 
-    inline ModbusTcpMessage ModbusTcpMessage::outgoing(uint16_t transactionId, uint16_t unitId, 
-                                                       const ModbusMessage& message) {
-        return ModbusTcpMessage(transactionId, unitId, &message);
-    }
 
-    inline ModbusTcpMessage ModbusTcpMessage::incoming(uint16_t transactionId, uint16_t unitId, 
-                                     ModbusMessage *message) {
-        return ModbusTcpMessage(transactionId, unitId, message);
-    }
+    
 
 } // namespace j2
 

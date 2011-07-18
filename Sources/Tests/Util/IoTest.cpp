@@ -58,6 +58,8 @@ TEST(MemoryIoReader, error_when_reading_past_end_of_file) {
     vector<uint8_t> dummy;
     reader.read(dummy, 1000);
     EXPECT_TRUE(reader.hasError() && reader.isEof());
+
+    EXPECT_FALSE(reader);
 }
 
 TEST(MemoryIoReader, chaining_reads) {

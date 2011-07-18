@@ -6,15 +6,9 @@
 namespace j2 {
     enum ModbusFunctionCode {
         InvalidFunction = 0,
-        ReadCoilStatus = 1,
-        ReadInputStatus = 2,
         ReadHoldingRegisters = 3,
-        ReadInputRegisters = 4,
-        ForceSingleCoil = 5,
-        PresetSingleRegister = 6,
         ReadExceptionStatus = 7,
-        ForceMultipleCoils = 15,
-        PresetMultipleRegisters = 16,
+        WriteMultipleRegisters = 16,
         ReportSlaveId = 17        
     };
 
@@ -93,8 +87,74 @@ namespace j2 {
     public:
         std::vector<uint16_t> registers;
     };
+
+
+    class WriteMultipleRegistersRequest : public ModbusRequest {
+    public:
+        WriteMultipleRegistersRequest() { }
+
+        WriteMultipleRegistersRequest(std::vector<uint16_t> registers) :
+            registers(registers)
+        {
+        }
+
+        ModbusFunctionCode functionCode() const { return WriteMultipleRegisters; }
+
+        int size() const { return 2 + (registers.size() * 2); }
+
+
+        void serialize(IoWriter& writer) const {
+            assert(registers.size() < 256);
+            writer
+                .write(uint16_t(registers.size()))
+                .write(uint8_t(registers.size()*2))
+                .write(registers);                   
+        }
+
+        void deserialize(IoReader& reader) {
+            registers.clear();
+            uint8_t nrBytes;
+            uint16_t nrRegisters;
+            reader.read(&nrRegisters);
+            reader.read(&nrBytes);
+            reader.buffer(nrBytes);
+            reader.read(registers, nrRegisters);
+        }
+
+    public:
+        std::vector<uint16_t> registers;
+    };
+
+
+    class WriteMultipleRegistersResponse : public ModbusResponse {
+    public:
+        WriteMultipleRegistersResponse() { }
+
+        WriteMultipleRegistersResponse(uint16_t startingAddress, uint16_t numberOfRegisters) :
+            startingAddress(startingAddress),
+            numberOfRegisters(numberOfRegisters) {
+        }
         
-        
+        ModbusFunctionCode functionCode() const { return WriteMultipleRegisters; }
+
+        int size() const { return 4; }
+
+        void serialize(IoWriter& writer) const {
+            writer
+                .write(startingAddress)
+                .write(numberOfRegisters);
+        }
+
+        void deserialize(IoReader& reader) {
+            reader
+                .read(&startingAddress)
+                .read(&numberOfRegisters);
+        }
+
+    public:
+        uint16_t startingAddress;
+        uint16_t numberOfRegisters;
+    };
 
 } // namespace j2
 

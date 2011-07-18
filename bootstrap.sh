@@ -13,5 +13,5 @@ BUILDDIR=${J2DRAGLINE}/Build
  make)
 
 # Main
-(cd ${BUILDDIR}; cmake ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR})
+(cd ${BUILDDIR}; cmake ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR} -DCMAKE_BUILD_TYPE:STRING=Debug)
 echo "(cd ${BUILDDIR}; make)"

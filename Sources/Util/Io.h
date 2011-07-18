@@ -23,6 +23,8 @@ namespace j2 {
 
         virtual bool hasError() const { return _hasError; }
 
+        virtual operator bool() const { return !(isEof() || hasError()); }
+
     protected:
         Io() : _hasError(false) {}
         void hasError(bool value) { _hasError = value; }
@@ -34,6 +36,8 @@ namespace j2 {
 
     class IoWriter;
     class IoReader;
+    class MemoryIoReader;
+    class MemoryIoWriter;
 
     class Serializable {
     public:
@@ -136,19 +140,18 @@ namespace j2 {
     };
 
 
-    /** An Io wrapper that reads from a vector of bytes. */
+    /** An Io wrapper that reads from a collection/array etc of bytes. */
     class MemoryIoReader : public IoReader {
     public:
         MemoryIoReader(shared_buffer data) :
             _bytes(data) {
             _i = 0;
         }
-        
+
         /* Initialize the MemoryIoReader from the given bytes and size. */
         MemoryIoReader(const uint8_t data[], 
-                       int size) : 
-            _bytes(new std::vector<uint8_t>(size)) {
-            _bytes->assign(data, data + size);
+                       int size) : _bytes(new j2::buffer) {
+            _bytes->assign(data, data+size);
             _i = 0;
         } 
 
@@ -176,9 +179,7 @@ namespace j2 {
     /** An Io wrapper that appends to a vector of bytes. */
     class MemoryIoWriter : public IoWriter {
     public:
-        
-        MemoryIoWriter(shared_buffer data) : _bytes(data) { 
-        }
+        MemoryIoWriter(shared_buffer data) : _bytes(data) { }
 
         virtual void writeByte(uint8_t byte) {
             if (hasError()) return;
@@ -191,7 +192,41 @@ namespace j2 {
 
     private:
         shared_buffer _bytes;
+    };
 
+    class IoStreamWriter : public IoWriter {
+    public:
+        IoStreamWriter(std::ostream& stream) : stream(stream) { }
+
+        virtual void writeByte(uint8_t byte) {
+            stream.write((const char *)&byte, 1);
+        }
+
+        virtual void close() { }
+        
+        virtual bool isEof() { return stream.eof(); }
+        
+    private:
+        std::ostream& stream;
+    };
+
+
+    class IoStreamReader : public IoReader {
+    public:
+        IoStreamReader(std::istream& stream) : stream(stream) { }
+
+        virtual uint8_t readByte() {
+            uint8_t byte;
+            stream.read((char *)&byte, 1);
+            return byte;
+        }
+
+        virtual void close() { }
+        
+        virtual bool isEof() { return stream.eof(); }
+        
+    private:
+        std::istream& stream;
     };
 
     inline void hexdump(const buffer& buf) {

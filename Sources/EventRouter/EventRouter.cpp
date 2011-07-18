@@ -11,11 +11,11 @@ EventRouter* EventRouter::instance() {
 }
 
 void EventRouter::publish(const std::string& name, const boost::any value) {
-    (*signal_for(name))(value);
+    (*signal_for(name))(name, value);
 }
 
 Subscription<> EventRouter::subscribe(const std::string& name,
-                                boost::function1<void, boost::any> callback) {
+                                      boost::function2<void, const std::string, boost::any> callback) {
     return Subscription<>(*this,
                           name,
                           signal_for(name)->connect(callback));

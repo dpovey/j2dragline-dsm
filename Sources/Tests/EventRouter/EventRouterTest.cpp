@@ -5,15 +5,14 @@
 using namespace j2;
 using namespace std;
 
-static std::string received_string;
-static int received_int;
-
-void receive_string(boost::any value) {
-    received_string = boost::any_cast<std::string>(value);
+void receive_string(const std::string name, const std::string& value) {
+    EXPECT_EQ("string", name);
+    EXPECT_EQ("Hello World", value);
 }
 
-void receive_int(boost::any value) {
-   received_int = boost::any_cast<int>(value);
+void receive_int(const std::string name, int value) {
+    EXPECT_EQ("int", name);
+    EXPECT_EQ(99, value);
 }
 
 TEST(EventRouter, can_pub_and_sub) {
@@ -23,16 +22,16 @@ TEST(EventRouter, can_pub_and_sub) {
     int byref;
     std::tr1::shared_ptr<int> shared_ptr_int(new int());
     std::string byref_string;
-    router.subscribe<std::string>("string").deliver_with(receive_string);
-    router.subscribe<std::string>("string").assign_to(&byref_string);
+    router.subscribe<std::string>("string")
+        .deliver_with(receive_string)
+        .assign_to(&byref_string);
+    
     router.publish("string", EXPECTED_STRING);
     router.subscribe<int>("int")
         .deliver_with(receive_int)
         .assign_to(&byref)
         .assign_to(shared_ptr_int);
     router.publish("int", EXPECTED_INT); 
-    EXPECT_EQ(EXPECTED_STRING, received_string);
     EXPECT_EQ(EXPECTED_STRING, byref_string);
-    EXPECT_EQ(EXPECTED_INT, received_int);
     EXPECT_EQ(EXPECTED_INT, byref);    
 }

@@ -18,41 +18,39 @@ pair<REQUEST_TYPE, RESPONSE_TYPE> sendRequestAndGetResponse(REQUEST_TYPE& reques
 
     // These Writers and Readers wrap the above buffers to simulate comms
     // between client and server
-    MemoryIoWriter* clientRequestWriter = new MemoryIoWriter(clientToServerEncoded);
+    MemoryIoWriter clientRequestWriter(clientToServerEncoded);
     MemoryIoReader serverRequestReader(clientToServerEncoded);
     MemoryIoWriter serverResponseWriter(serverToClientEncoded);
-    MemoryIoReader* clientResponseReader = new MemoryIoReader(serverToClientEncoded);
+    MemoryIoReader clientResponseReader(serverToClientEncoded);
     
     const int TRANSACTION_ID = 1;
     const int UNIT_ID = 1;
 
-    // Serialize the simulated server response. This will be read immediately
-    // when the request is sent below
-    ModbusTcpMessage::outgoing(TRANSACTION_ID, UNIT_ID, responseMessage)
-        .serialize(serverResponseWriter);
+    Modbus client_modbus(UNIT_ID);
+    Modbus server_modbus(UNIT_ID);
 
-    // Wrap client readers and writers in shared_ptr for resource management
-    shared_ptr<IoWriter> sharedWriter(clientRequestWriter);
-    shared_ptr<IoReader> sharedReader(clientResponseReader);
-    Modbus& modbus = ModbusConfigurer()
-        .reader(sharedReader)
-        .writer(sharedWriter)
-        .transactionId(TRANSACTION_ID)
-        .unitId(UNIT_ID)
-        .configure();
+    // Send request
+    client_modbus.write(clientRequestWriter, requestMessage);
 
-    // Make request and get response
-    RESPONSE_TYPE returnedResponseMessage = modbus.request(requestMessage);
+    // Decode request
+    REQUEST_TYPE* returnedRequestMessage = 
+        dynamic_cast<REQUEST_TYPE*>(server_modbus.read_request(serverRequestReader));
 
-    // Decode and verify the message sent to the server
-    REQUEST_TYPE returnedRequestMessage;
-    ModbusTcpMessage::incoming(1, 1, &returnedRequestMessage)
-        .deserialize(serverRequestReader);    
-    return pair<REQUEST_TYPE, RESPONSE_TYPE>(returnedRequestMessage, 
-                                             returnedResponseMessage);
+    // Send response
+    server_modbus.write(serverResponseWriter, responseMessage);
+
+    // Decode response
+    RESPONSE_TYPE* returnedResponseMessage =
+        dynamic_cast<RESPONSE_TYPE*>(client_modbus.read_response(clientResponseReader));
+
+    std::pair<REQUEST_TYPE, RESPONSE_TYPE> result(*returnedRequestMessage, 
+                                                  *returnedResponseMessage);
+    delete returnedRequestMessage;
+    delete returnedResponseMessage;
+    return result;
 }
 
-TEST(Modbus, read_holding_registers_with_template) {
+TEST(Modbus, read_holding_registers) {
     // The server will respond to a request for 3 registers starting at 0 with
     // the following data
     const uint16_t REGISTERS[] = { 0x01, 0x0203, 0x4050 };
@@ -75,3 +73,50 @@ TEST(Modbus, read_holding_registers_with_template) {
     EXPECT_EQ(0x0203, result.second.registers[1]);
     EXPECT_EQ(0X4050, result.second.registers[2]);
 }
+
+// TEST(Modbus, write_multiple_registers) {
+//     // The client will write 3 registers starting at 0 with
+//     // the following data
+//     const uint16_t REGISTERS[] = { 0x01, 0x0203, 0x4050 };
+//     const int NR_REGISTERS = 3;
+//     vector<uint16_t> registers;
+//     registers.assign(REGISTERS, REGISTERS + NR_REGISTERS);
+//     WriteMultipleRegistersRequest requestMessage(registers);
+//     WriteMultipleRegistersResponse responseMessage(0, NR_REGISTERS);
+
+//     pair<WriteMultipleRegistersRequest, WriteMultipleRegistersResponse> result =
+//         sendRequestAndGetResponse(requestMessage, responseMessage);
+
+//     // Verify request    
+//     ASSERT_EQ(3, result.first.registers.size());
+//     EXPECT_EQ(0x01, result.first.registers[0]);
+//     EXPECT_EQ(0x0203, result.first.registers[1]);
+//     EXPECT_EQ(0X4050, result.first.registers[2]);
+
+//     // Verify response
+//     EXPECT_EQ(0, result.second.startingAddress);
+//     EXPECT_EQ(3, result.second.numberOfRegisters);
+// }
+
+// TEST(Modbus, read_from_file) {
+//     const std::string MODBUS_TEST_DATA = "TestData/modbus_req";
+//     ifstream stream(MODBUS_TEST_DATA);
+//     IoStreamReader reader(ifstream);
+//     Modbus& modbus = ModbusConfigurer()
+//         .transactionId(TRANSACTION_ID)
+//         .unitId(UNIT_ID)
+//         .configure();
+//     while(reader) {
+//         ModbusMessage& message = modbus.read_request(reader);
+//         switch(message->functionCode()) {
+//         case ModbusFunctionCode::WriteMultipleRegisters:
+//             WriteMultipleRegistersRequest& request = 
+//                 dynamic_cast<WriteMultipleRegistersRequest&>message;
+//             modbus.write_request(WriteMultipleRegistersResponse(request.registers.size());
+//             break;
+//         default:
+//             ASSERT_FALSE(true);
+//         }
+//     }
+
+// }

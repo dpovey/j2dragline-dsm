@@ -7,6 +7,7 @@
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/bind/protect.hpp>
 
 #ifndef _EVENT_ROUTER_H
 #define _EVENT_ROUTER_H
@@ -17,8 +18,10 @@ namespace j2 {
     // callback that can take boost::any and cast it.  This is used
     // by Subscription::deliver_with
     template <typename T> struct ANY_FUNC_ADAPTOR {
-        static void ADAPT(const boost::any value, boost::function1<void, T> func) {
-            func(boost::any_cast<T>(value));
+        static void ADAPT(const std::string& name,
+                          const boost::any value, 
+                          boost::function2<void, const std::string&, T> func) {
+            func(name, boost::any_cast<T>(value));
         }
     };
 
@@ -27,13 +30,13 @@ namespace j2 {
     // callback that can take boost::any and cast it.  This is used
     // by Subscription::assign_to
     template <typename T, typename P> struct ANY_PTR_ADAPTOR {
-        static void ADAPT(const boost::any item, P ptr) {
+        static void ADAPT(const std::string& name, const boost::any item, P ptr) {
             *ptr = boost::any_cast<T>(item);
         }
     };
 
     /** @brief Signal used by @c EventRouter */
-    typedef boost::signal<void (const boost::any)> Signal;
+    typedef boost::signal<void (const std::string&, const boost::any)> Signal;
 
     /** @brief @c shared_ptr for Signal used by @c EventRouter */
     typedef std::tr1::shared_ptr<Signal> SignalPtr;
@@ -57,6 +60,8 @@ namespace j2 {
      *
      * Note: that holding a reference to a @Subscription is currently the only way
      * to unsubscribe from events.
+     *
+     * @tparam T type of event expected.
      *
      * @see EventRouter
      */
@@ -112,15 +117,15 @@ namespace j2 {
          * @param func callback function to invoke
          * @return a reference to the @c Subscription to allow chaining
          **/
-        Subscription& deliver_with(boost::function1<void, T> func) {
-            return adapt< boost::function1<void, T> >(ANY_FUNC_ADAPTOR<T>::ADAPT, func);
-        }        
+        Subscription& deliver_with(boost::function2<void, const std::string&, T> func) {
+            return adapt< boost::function2<void, const std::string&, T> >(ANY_FUNC_ADAPTOR<T>::ADAPT, func);
+        }
 
         /**
          * @brief temporarily block delivery of events for this @c Subscription.
          * @see unblock
          **/
-        void block() { 
+        void block() {
             for (connection_list::iterator it = _connections.begin();
                  it != _connections.end();
                  it++) {
@@ -141,8 +146,7 @@ namespace j2 {
         }
 
         /**
-         * @brief remove a temporary block on delivery of events for this @c Subscription.
-         * @see block
+         * @brief unsubscribe from events.
          **/
         void unsubscribe() { 
             for (connection_list::iterator it = _connections.begin();
@@ -155,11 +159,11 @@ namespace j2 {
     private:
         // Template used in adapting callback/ptr assignment
         template <typename DEST>
-        Subscription& adapt(boost::function2<void, const boost::any, DEST> func,
+        Subscription& adapt(boost::function3<void, const std::string&, const boost::any, DEST> func,
                             DEST dest) {
             SignalPtr signal = _event_router.signal_for(_name);
             boost::signals::connection connection = 
-                signal->connect(boost::bind(func, _1, dest));
+                signal->connect(boost::bind(func, _1, _2, dest));
             _connections.push_back(connection);
             return *this;
         }
@@ -209,7 +213,7 @@ namespace j2 {
          * @return a @c Subscription object bound to the generic callback
          **/
         Subscription<> subscribe(const std::string& name, 
-                                  boost::function1<void, boost::any> callback);
+                                 boost::function2<void, const std::string, boost::any> callback);
 
         /**
          * @brief Return the boost signal used for event delivery for the corresponding name.
