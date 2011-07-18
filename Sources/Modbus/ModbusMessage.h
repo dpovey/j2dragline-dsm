@@ -67,7 +67,9 @@ namespace j2 {
 
         ModbusFunctionCode functionCode() const { return ReadHoldingRegisters; }
 
-        int size() const { return 2 + (registers.size() * 2); }
+        int size() const { 
+            return sizeof(uint16_t) +
+                (registers.size() * sizeof(uint16_t)); }
 
 
         void serialize(IoWriter& writer) const {
@@ -93,19 +95,27 @@ namespace j2 {
     public:
         WriteMultipleRegistersRequest() { }
 
-        WriteMultipleRegistersRequest(std::vector<uint16_t> registers) :
-            registers(registers)
+    WriteMultipleRegistersRequest(uint16_t starting_address,
+                                  std::vector<uint16_t> registers) :
+        starting_address(starting_address),
+        registers(registers)
         {
         }
 
         ModbusFunctionCode functionCode() const { return WriteMultipleRegisters; }
 
-        int size() const { return 2 + (registers.size() * 2); }
+        int size() const { return 
+                sizeof(uint16_t) + // starting address
+                sizeof(uint16_t) + // nr registers
+                sizeof(uint8_t) +  // nr bytes
+                + (registers.size() * sizeof(uint16_t));
+        }
 
 
         void serialize(IoWriter& writer) const {
             assert(registers.size() < 256);
             writer
+                .write(starting_address)
                 .write(uint16_t(registers.size()))
                 .write(uint8_t(registers.size()*2))
                 .write(registers);                   
@@ -115,6 +125,7 @@ namespace j2 {
             registers.clear();
             uint8_t nrBytes;
             uint16_t nrRegisters;
+            reader.read(&starting_address);
             reader.read(&nrRegisters);
             reader.read(&nrBytes);
             reader.buffer(nrBytes);
@@ -122,6 +133,7 @@ namespace j2 {
         }
 
     public:
+        uint16_t starting_address;
         std::vector<uint16_t> registers;
     };
 

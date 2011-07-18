@@ -45,8 +45,8 @@ pair<REQUEST_TYPE, RESPONSE_TYPE> sendRequestAndGetResponse(REQUEST_TYPE& reques
 
     std::pair<REQUEST_TYPE, RESPONSE_TYPE> result(*returnedRequestMessage, 
                                                   *returnedResponseMessage);
-    delete returnedRequestMessage;
-    delete returnedResponseMessage;
+    //delete returnedRequestMessage;
+    //delete returnedResponseMessage;
     return result;
 }
 
@@ -74,29 +74,30 @@ TEST(Modbus, read_holding_registers) {
     EXPECT_EQ(0X4050, result.second.registers[2]);
 }
 
-// TEST(Modbus, write_multiple_registers) {
-//     // The client will write 3 registers starting at 0 with
-//     // the following data
-//     const uint16_t REGISTERS[] = { 0x01, 0x0203, 0x4050 };
-//     const int NR_REGISTERS = 3;
-//     vector<uint16_t> registers;
-//     registers.assign(REGISTERS, REGISTERS + NR_REGISTERS);
-//     WriteMultipleRegistersRequest requestMessage(registers);
-//     WriteMultipleRegistersResponse responseMessage(0, NR_REGISTERS);
+TEST(Modbus, write_multiple_registers) {
+    // The client will write 3 registers starting at 0 with
+    // the following data
+    const uint16_t REGISTERS[] = { 0x01, 0x0203, 0x4050 };
+    const int NR_REGISTERS = 3;
+    vector<uint16_t> registers;
+    registers.assign(REGISTERS, REGISTERS + NR_REGISTERS);
+    WriteMultipleRegistersRequest requestMessage(0, registers);
+    WriteMultipleRegistersResponse responseMessage(0, NR_REGISTERS);
 
-//     pair<WriteMultipleRegistersRequest, WriteMultipleRegistersResponse> result =
-//         sendRequestAndGetResponse(requestMessage, responseMessage);
+    pair<WriteMultipleRegistersRequest, WriteMultipleRegistersResponse> result =
+        sendRequestAndGetResponse(requestMessage, responseMessage);
 
-//     // Verify request    
-//     ASSERT_EQ(3, result.first.registers.size());
-//     EXPECT_EQ(0x01, result.first.registers[0]);
-//     EXPECT_EQ(0x0203, result.first.registers[1]);
-//     EXPECT_EQ(0X4050, result.first.registers[2]);
+    // Verify request
+    ASSERT_EQ(3, result.first.registers.size());
+    EXPECT_EQ(0, result.first.starting_address);
+    EXPECT_EQ(0x01, result.first.registers[0]);
+    EXPECT_EQ(0x0203, result.first.registers[1]);
+    EXPECT_EQ(0X4050, result.first.registers[2]);
 
-//     // Verify response
-//     EXPECT_EQ(0, result.second.startingAddress);
-//     EXPECT_EQ(3, result.second.numberOfRegisters);
-// }
+    // Verify response
+    EXPECT_EQ(0, result.second.startingAddress);
+    EXPECT_EQ(3, result.second.numberOfRegisters);
+}
 
 // TEST(Modbus, read_from_file) {
 //     const std::string MODBUS_TEST_DATA = "TestData/modbus_req";
