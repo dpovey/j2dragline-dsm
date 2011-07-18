@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8)
 include(ExternalProject)
 find_package(GTest QUIET)
 if (NOT GTest_FOUND)
