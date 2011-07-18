@@ -1,6 +1,6 @@
 #include <string>
 #include <memory>
-#include <map>
+#include <tr1/unordered_map>
 #include <vector>
 #include <tr1/memory>
 #include <boost/any.hpp>
@@ -217,7 +217,7 @@ namespace j2 {
         static EventRouter* default_instance; 
 
     private:
-        std::map<std::string, SignalPtr> _subscriptions;
+        std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;
     };
 
     
