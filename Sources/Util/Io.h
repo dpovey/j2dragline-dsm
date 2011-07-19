@@ -56,19 +56,23 @@ namespace j2 {
         /** @brief Read an 8 bit value. */
         virtual IoReader& read(uint8_t* byte) {
             *byte = readByte();
+            printf("uint8_t %02x\n", *byte);
             return *this;
         }
     
         /** @brief Read a 16-bit value. */
         virtual IoReader& read(uint16_t* doubleByte) {
             *doubleByte = (readByte() << 8) | readByte();
+            printf("uint16_t %04x\n", *doubleByte);
             return *this;
         }
     
         /** @brief Read exactly length bytes of data and append to the vector passed in. */
         template <typename T, typename LEN>
         IoReader& read(std::vector<T>& data, LEN length) {
+            printf("nr items:%d\n", length);
             T item;
+            data.reserve(length);
             for (int i = 0; i < length && !isEof(); i++) {
                 read(&item);
                 data.push_back(item);
@@ -204,7 +208,7 @@ namespace j2 {
 
         virtual void close() { }
         
-        virtual bool isEof() { return stream.eof(); }
+        virtual bool isEof() const { return stream.eof(); }
         
     private:
         std::ostream& stream;
@@ -216,14 +220,22 @@ namespace j2 {
         IoStreamReader(std::istream& stream) : stream(stream) { }
 
         virtual uint8_t readByte() {
+            if (hasError()) return 0;
+            if (isEof()) {                
+                return 0;
+            }
             uint8_t byte;
             stream.read((char *)&byte, 1);
             return byte;
         }
 
+        virtual bool hasError() const {
+            return !(stream.good());
+        }
+
         virtual void close() { }
         
-        virtual bool isEof() { return stream.eof(); }
+        virtual bool isEof() const { return stream.eof(); }
         
     private:
         std::istream& stream;

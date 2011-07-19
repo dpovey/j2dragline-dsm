@@ -17,8 +17,7 @@ namespace j2 {
     
     class ModbusTcpMessage : public Serializable {
     public:
-        ModbusTcpMessage() {
-            data = shared_buffer(new buffer);
+        ModbusTcpMessage() : data(new buffer) {
         }
 
         ModbusTcpMessage(uint16_t transactionId,
@@ -26,11 +25,12 @@ namespace j2 {
                          const ModbusMessage& message) :
             transactionId(transactionId),
             protocolId(0),
-            size(message.size()),
+            size(message.size() + sizeof(unitId) + sizeof(functionCode)),
             unitId(unitId),
             functionCode(message.functionCode()),
-            data(new buffer()) {
-            data->reserve(message.size());
+            data(new buffer)            
+        {
+            data->reserve(message.size() - (sizeof(unitId) + sizeof(functionCode)));
             MemoryIoWriter writer(data);
             message.serialize(writer);
         }
@@ -39,7 +39,7 @@ namespace j2 {
             writer
                 .write(transactionId)
                 .write(protocolId)
-                .write(size)
+                .write(size) 
                 .write(unitId)
                 .write(functionCode)
                 .write(*data);
@@ -49,11 +49,14 @@ namespace j2 {
             reader.read(&transactionId);
             reader.read(&protocolId);
             reader.read(&size);
+            reader.buffer(size);
             reader.read(&unitId);
             reader.read(&functionCode);
-            reader.buffer(size);
-            data->reserve(size);
-            reader.read(*data, size);
+            int remaining = size - (sizeof(unitId) + sizeof(functionCode));
+            if (remaining) data->reserve(remaining);
+            reader.read(*data, remaining);
+            
+            puts("-----------------------------------------");
 
             // TODO: Handle Modbus exceptions
 
@@ -65,14 +68,26 @@ namespace j2 {
                 throw ModbusException("Invalid protocol id: " + protocolId);
             }
         }
+        
+        void set_message(ModbusMessage* message) {
+            _message = std::tr1::shared_ptr<ModbusMessage>(message);
+        }
+
+        template <class T>
+        const T& message() const {
+            return *std::tr1::dynamic_pointer_cast<T>(_message);
+        }
 
     public:
-        uint16_t transactionId;     // Unique transaction id
-        uint16_t protocolId;        // Must be zero for Modbus TCP
-        uint8_t functionCode;       // function
-        uint16_t size;              // Data size
-        uint16_t unitId;            // Unit id
-        shared_buffer data;         // Message data
+        uint16_t transactionId;       // Unique transaction id
+        uint16_t protocolId;          // Must be zero for Modbus TCP
+        uint8_t functionCode;         // function
+        uint16_t size;                // Data size
+        uint8_t unitId;               // Unit id
+        shared_buffer data;           // Message data
+        
+    private:
+        std::tr1::shared_ptr<ModbusMessage> _message; // Message
     };
 
 

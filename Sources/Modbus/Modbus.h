@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iostream>
+#include <tr1/functional>
 #include "Io.h"
 #include "ModbusMessage.h"
 #include "ModbusTcpMessage.h"
@@ -9,74 +11,55 @@
 namespace j2 {
 
     /** @brief class for managing communication with PLC via Modbus over TCP */
-    class Modbus {
+    class ModbusTcp {
     public:
-        explicit Modbus(uint16_t unitId) :
-            _transactionId(0),
-            _unitId(unitId) { }
+        ModbusTcp() { }
 
-        ModbusRequest* read_request(IoReader& reader) {
-            ModbusTcpMessage modbus_tcp_message;
-            modbus_tcp_message.deserialize(reader);
+        typedef std::tr1::function<ModbusMessage* (ModbusFunctionCode)> ModbusMessageFactoryMethod;
 
-            update_transaction_id(modbus_tcp_message.transactionId);
+        static ModbusTcpMessage read(IoReader& reader, 
+                                     ModbusMessageFactoryMethod create_message);
+        
+        static ModbusTcpMessage read_request(IoReader& reader);
+        
+        static ModbusTcpMessage read_response(IoReader& reader);
 
-            // TODO check for error
-            ModbusRequest* result;
+        static void write_request(IoWriter& writer, const ModbusRequest& request);
 
-            switch(modbus_tcp_message.functionCode) {
-            case WriteMultipleRegisters:
-                result = new WriteMultipleRegistersRequest();
-                break;
-            case ReadHoldingRegisters:
-                result = new ReadHoldingRegistersRequest();
-                break;
-            default:
-                //TODO: Exception?
-                break;
-            }
-            MemoryIoReader data_reader(modbus_tcp_message.data);
-            result->deserialize(data_reader);
-            return result;
-        }
-
-        ModbusResponse* read_response(IoReader& reader) {
-            ModbusTcpMessage modbus_tcp_message;
-            modbus_tcp_message.deserialize(reader);
-            // TODO check for error
-
-            update_transaction_id(modbus_tcp_message.transactionId);
-
-            ModbusResponse* result;
-            switch(modbus_tcp_message.functionCode) {
-            case WriteMultipleRegisters:
-                result = new WriteMultipleRegistersResponse();
-                break;
-            case ReadHoldingRegisters:
-                result = new ReadHoldingRegistersResponse();
-                break;
-            default:
-                //TODO: Exception?
-                break;
-            }
-            MemoryIoReader data_reader(modbus_tcp_message.data);                        
-            result->deserialize(data_reader);
-            return result;
-        }
-
-        void write(IoWriter& writer, const ModbusMessage& request) {
-            ModbusTcpMessage(_transactionId, _unitId, request).serialize(writer);
-        }
-
-    private:
-        void update_transaction_id(uint16_t received_transaction_id) {
-            _transactionId = std::max(_transactionId, uint16_t(received_transaction_id + 1));
-        }
-
-    protected:
-        uint16_t _transactionId;
-        uint16_t _unitId;
+        static void write_response(IoWriter& writer, 
+                                   const ModbusTcpMessage& request,
+                                   const ModbusResponse& response);
     };
+
+    inline ModbusTcpMessage ModbusTcp::read(IoReader& reader, 
+                                            ModbusMessageFactoryMethod create_message) {
+        ModbusTcpMessage message;
+        message.deserialize(reader);
+        ModbusMessage* modbus_message = create_message((ModbusFunctionCode)message.functionCode);
+        MemoryIoReader data_reader(message.data);
+        modbus_message->deserialize(data_reader);
+        message.set_message(modbus_message);
+        return message;    
+    }
+        
+    inline ModbusTcpMessage ModbusTcp::read_request(IoReader& reader) {
+        return read(reader, ModbusMessage::request_for);
+    }
+    
+    inline ModbusTcpMessage ModbusTcp::read_response(IoReader& reader) {
+        return read(reader, ModbusMessage::response_for);
+    }
+
+    inline void ModbusTcp::write_request(IoWriter& writer, const ModbusRequest& request) {
+        ModbusTcpMessage(uint16_t(0), uint16_t(0), request).serialize(writer);
+    }
+
+    inline void ModbusTcp::write_response(IoWriter& writer, 
+                                          const ModbusTcpMessage& request,
+                                          const ModbusResponse& response) {
+        ModbusTcpMessage(request.transactionId, request.unitId, response).serialize(writer);
+    }
+    
 
 } // namespace j2
 
