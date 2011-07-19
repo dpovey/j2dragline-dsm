@@ -147,6 +147,12 @@ namespace j2 {
     /** An Io wrapper that reads from a collection/array etc of bytes. */
     class MemoryIoReader : public IoReader {
     public:
+        MemoryIoReader(const j2::buffer& data) :
+            _bytes(new j2::buffer) {
+            _i = 0;
+            _bytes->assign(data.begin(), data.end());
+        }
+
         MemoryIoReader(shared_buffer data) :
             _bytes(data) {
             _i = 0;

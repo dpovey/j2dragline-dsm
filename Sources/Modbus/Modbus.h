@@ -36,7 +36,7 @@ namespace j2 {
         ModbusTcpMessage message;
         message.deserialize(reader);
         ModbusMessage* modbus_message = create_message((ModbusFunctionCode)message.functionCode);
-        MemoryIoReader data_reader(message.data);
+        MemoryIoReader data_reader(message.data());
         modbus_message->deserialize(data_reader);
         message.set_message(modbus_message);
         return message;    

@@ -17,7 +17,7 @@ namespace j2 {
     
     class ModbusTcpMessage : public Serializable {
     public:
-        ModbusTcpMessage() : data(new buffer) {
+        ModbusTcpMessage() : _data(new buffer) {
         }
 
         ModbusTcpMessage(uint16_t transactionId,
@@ -28,10 +28,10 @@ namespace j2 {
             size(message.size() + sizeof(unitId) + sizeof(functionCode)),
             unitId(unitId),
             functionCode(message.functionCode()),
-            data(new buffer)            
+            _data(new buffer)            
         {
-            data->reserve(message.size() - (sizeof(unitId) + sizeof(functionCode)));
-            MemoryIoWriter writer(data);
+            _data->reserve(message.size() - (sizeof(unitId) + sizeof(functionCode)));
+            MemoryIoWriter writer(_data);
             message.serialize(writer);
         }
             
@@ -42,7 +42,7 @@ namespace j2 {
                 .write(size) 
                 .write(unitId)
                 .write(functionCode)
-                .write(*data);
+                .write(*_data);
         }
 
         void deserialize(IoReader& reader) {
@@ -53,8 +53,8 @@ namespace j2 {
             reader.read(&unitId);
             reader.read(&functionCode);
             int remaining = size - (sizeof(unitId) + sizeof(functionCode));
-            if (remaining) data->reserve(remaining);
-            reader.read(*data, remaining);
+            if (remaining) _data->reserve(remaining);
+            reader.read(*_data, remaining);
             
             puts("-----------------------------------------");
 
@@ -78,15 +78,17 @@ namespace j2 {
             return *std::tr1::dynamic_pointer_cast<T>(_message);
         }
 
+        const buffer& data() const { return *_data; }
+
     public:
         uint16_t transactionId;       // Unique transaction id
         uint16_t protocolId;          // Must be zero for Modbus TCP
         uint8_t functionCode;         // function
         uint16_t size;                // Data size
         uint8_t unitId;               // Unit id
-        shared_buffer data;           // Message data
         
     private:
+        shared_buffer _data;           // Message data
         std::tr1::shared_ptr<ModbusMessage> _message; // Message
     };
 
