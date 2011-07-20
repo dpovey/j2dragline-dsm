@@ -1,12 +1,14 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <queue>
 #include <tr1/memory>
 #include <tr1/functional>
 #include <tr1/unordered_map>
 #include <boost/any.hpp>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #ifndef _EVENT_ROUTER_H
 #define _EVENT_ROUTER_H
@@ -175,6 +177,44 @@ namespace j2 {
             router.deliver(name, value);
         }
     };
+
+    
+
+    template <class EVENT_ROUTER=EventRouter>
+    class QueueingDeliveryPolicy {
+    public:
+        struct Event {
+            Event(EVENT_ROUTER& router, const std::string& name, const boost::any value) :
+                router(router),
+                name(name),
+                value(value) { }
+                
+            EVENT_ROUTER& router;
+            const std::string& name;
+            const boost::any value;            
+            
+            void deliver() {
+                router.deliver(name, value);
+            }
+        };
+
+    public:
+        void operator()(EVENT_ROUTER& router,
+                        const std::string& name,
+                        const boost::any value) {
+            _queue.push(Event(router, name, value));
+        }
+
+        bool deliver() {
+            if (_queue.empty()) return false;
+            _queue.front().deliver();
+            return true;
+        }
+
+    private:
+        std::queue<Event> _queue;
+    };
+
 
     typedef ImmediateDeliveryPolicy<EventRouter> DefaultDeliveryPolicy;
 
