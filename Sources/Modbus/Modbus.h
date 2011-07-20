@@ -38,7 +38,7 @@ namespace j2 {
         ModbusMessage* modbus_message = create_message((ModbusFunctionCode)message.functionCode);
         MemoryIoReader data_reader(message.data());
         modbus_message->deserialize(data_reader);
-        message.set_message(modbus_message);
+        message.message(modbus_message);
         return message;    
     }
         

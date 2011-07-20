@@ -12,6 +12,14 @@ namespace j2 {
         ReportSlaveId = 17        
     };
 
+    enum ModbusExceptionCode {
+        IllegalFunction = 0x1,
+        IllegalDataAddress = 0x2,
+        IllegalDataValue = 0x3,
+        SlaveDeviceFailure = 0x4
+    };
+        
+        
     class ModbusRequest;
     class ModbusResponse;
 
@@ -95,6 +103,36 @@ namespace j2 {
         std::vector<uint16_t> registers;
     };
 
+    class ModbusExceptionMessage : public virtual ModbusResponse, 
+                                   public virtual ModbusRequest {
+    public:       
+        ModbusExceptionMessage(int function_code, 
+                               ModbusExceptionCode exception) : 
+            _function_code(function_code),
+            _exception(exception) { }
+
+        int size() const { return sizeof(_function_code) + sizeof(_exception); }
+
+        ModbusFunctionCode functionCode() const { return (ModbusFunctionCode) _function_code; }
+
+        void serialize(IoWriter& writer) const {
+            writer
+                .write(_function_code)
+                .write(_exception);
+        }
+
+        void deserialize(IoReader& reader) {
+            reader
+                .read(&_function_code)
+                .read(&_exception);
+        }
+
+        uint8_t exception() const { return _exception; }
+        
+    private:
+        uint8_t _function_code;
+        uint8_t _exception;
+    };
 
     class WriteMultipleRegistersRequest : public ModbusRequest {
     public:
@@ -178,7 +216,7 @@ namespace j2 {
         switch(code) {
         case ReadHoldingRegisters: return new ReadHoldingRegistersRequest;
         case WriteMultipleRegisters: return new WriteMultipleRegistersRequest;
-        default: return 0; // TODO Exception
+        default: return new ModbusExceptionMessage(0x80 & code, IllegalFunction);
         }
     }
         
@@ -186,7 +224,7 @@ namespace j2 {
         switch(code) {
         case ReadHoldingRegisters: return new ReadHoldingRegistersResponse;
         case WriteMultipleRegisters: return new WriteMultipleRegistersResponse;
-        default: return 0; // TODO Exception
+        default: return new ModbusExceptionMessage(0x80 & code, IllegalFunction);
         }
     }
 

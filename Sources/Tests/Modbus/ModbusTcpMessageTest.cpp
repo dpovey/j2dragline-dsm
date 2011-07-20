@@ -106,19 +106,18 @@ TEST(Modbus, read_from_file) {
     int nr_messages = 0;
     while(reader) {
         ModbusTcpMessage message = ModbusTcp::read_request(reader);
+        EXPECT_FALSE(reader.hasError());
         nr_messages++;
         switch(message.functionCode) {
         case WriteMultipleRegisters: {
             WriteMultipleRegistersRequest request =
                 message.message<WriteMultipleRegistersRequest>();
-            cout << "Got message:" << nr_messages << endl;
-            cout << request.registers.size() << endl;
-        }
             break;
+        }
         default:
             ASSERT_FALSE(true);
             break;
         }
     }
-
+    EXPECT_EQ(60, nr_messages);
 }

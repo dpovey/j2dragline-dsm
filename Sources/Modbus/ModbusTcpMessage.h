@@ -12,7 +12,7 @@ namespace j2 {
 
     class ModbusException: public std::runtime_error {
     public:
-        ModbusException(const std::string &err) : runtime_error(err) {}
+        explicit ModbusException(const std::string &err) : runtime_error(err) {}
     };
     
     class ModbusTcpMessage : public Serializable {
@@ -53,23 +53,17 @@ namespace j2 {
             reader.read(&unitId);
             reader.read(&functionCode);
             int remaining = size - (sizeof(unitId) + sizeof(functionCode));
-            if (remaining) _data->reserve(remaining);
-            reader.read(*_data, remaining);
-            
-            puts("-----------------------------------------");
-
-            // TODO: Handle Modbus exceptions
-
-            if (reader.hasError()) {
-                throw ModbusException("Invalid modbus header");
+            if (remaining > 0) {
+                _data->reserve(remaining);
+                reader.read(*_data, remaining);
             }
-
+  
             if (protocolId != 0) {
-                throw ModbusException("Invalid protocol id: " + protocolId);
+                reader.error(ModbusException("Invalid protocol id"));
             }
         }
         
-        void set_message(ModbusMessage* message) {
+        void message(ModbusMessage* message) {
             _message = std::tr1::shared_ptr<ModbusMessage>(message);
         }
 
