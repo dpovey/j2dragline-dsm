@@ -167,7 +167,7 @@ namespace j2 {
     };
 
     template <class EVENT_ROUTER>
-    class DefaultDeliveryPolicy {
+    class ImmediateDeliveryPolicy {
     public:
         void operator()(EVENT_ROUTER& router,
                         const std::string& name,
@@ -175,6 +175,8 @@ namespace j2 {
             router.deliver(name, value);
         }
     };
+
+    typedef ImmediateDeliveryPolicy<EventRouter> DefaultDeliveryPolicy;
 
 
     /**
@@ -196,8 +198,8 @@ namespace j2 {
         typedef std::tr1::function<void (EventRouter&, const std::string&, const boost::any)> DeliveryPolicy;
 
     public:
-        EventRouter(DeliveryPolicy policy=DefaultDeliveryPolicy<EventRouter>()) : 
-            _delivery_policy(policy) { }
+        EventRouter(DeliveryPolicy policy=DefaultDeliveryPolicy()) : 
+            _deliver(policy) { }
 
         /**
          * @brief Publish an event of the given name with a value according to the
@@ -207,7 +209,7 @@ namespace j2 {
          * @param value value (must match type used in subscription).
          */
         void publish(const std::string& name, const boost::any value) {
-            _delivery_policy(*this, name, value);
+            _deliver(*this, name, value);
         }
 
         /**
@@ -269,7 +271,7 @@ namespace j2 {
 
     private:
         std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;
-        DeliveryPolicy _delivery_policy;
+        DeliveryPolicy _deliver;
     };
 
     
