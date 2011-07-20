@@ -179,6 +179,7 @@ namespace j2 {
          * for example in unit tests.
          */
         static EventRouter* instance();
+
     public:
         /**
          * @brief Publish an event of the given name with a value.
@@ -189,7 +190,7 @@ namespace j2 {
 
         /**
          * @brief Create a subcription for a given event.
-         * @param name of event to subscribe to
+         * @param name name of event to subscribe to
          * @return a @c Subscription object that can be bound to callbacks or
          *  pointer values
          **/
@@ -199,11 +200,29 @@ namespace j2 {
         }
 
         /**
+         * @brief Route messages for the given name to the destination event router.
+         *
+         * Provides a special subscription that can be used to route events between
+         * two @c EventRouters.  Events published on one @c EventRouter are automatically
+         * published on the other.
+         *
+         * @param name name of event to route
+         * @param dest destimation event router
+         * @return a @c Subscription object that can be used to unsubscribe from routed
+         * events.
+         */
+        Subscription<> route(const std::string& name, EventRouter& dest) {
+            return subscribe(name, 
+                             boost::bind<void>(&EventRouter::publish,
+                                               boost::ref(dest), _1, _2));
+        }
+
+        /**
          * @brief Create a subcription for a given event with a generic callback
          * @param name of event to subscribe to
          * @return a @c Subscription object bound to the generic callback
          **/
-        Subscription<> subscribe(const std::string& name, 
+        Subscription<> subscribe(const std::string& name,
                                  boost::function2<void, const std::string, boost::any> callback);
 
         /**
@@ -217,7 +236,7 @@ namespace j2 {
         static EventRouter* default_instance; 
 
     private:
-        std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;
+        std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;        
     };
 
     

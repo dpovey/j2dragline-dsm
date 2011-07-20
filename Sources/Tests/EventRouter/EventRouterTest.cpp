@@ -35,3 +35,29 @@ TEST(EventRouter, can_pub_and_sub) {
     EXPECT_EQ(EXPECTED_STRING, byref_string);
     EXPECT_EQ(EXPECTED_INT, byref);    
 }
+
+TEST(EventRouter, can_route_between_routers) {
+    EventRouter receiver_router;
+    EventRouter publisher_router;
+    std::string EXPECTED_STRING = "Hello World";
+    int EXPECTED_INT = 99;
+    int byref;
+    std::tr1::shared_ptr<int> shared_ptr_int(new int());
+    std::string byref_string;
+
+    receiver_router.subscribe<std::string>("string")
+        .deliver_with(receive_string)
+        .assign_to(&byref_string);
+
+    receiver_router.subscribe<int>("int")
+        .deliver_with(receive_int)
+        .assign_to(&byref)
+        .assign_to(shared_ptr_int);
+
+    publisher_router.route("string", receiver_router);
+    publisher_router.route("int", receiver_router);
+    publisher_router.publish("string", EXPECTED_STRING);
+    publisher_router.publish("int", EXPECTED_INT); 
+    EXPECT_EQ(EXPECTED_STRING, byref_string);
+    EXPECT_EQ(EXPECTED_INT, byref);    
+}
