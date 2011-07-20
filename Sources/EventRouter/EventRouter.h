@@ -3,6 +3,7 @@
 #include <tr1/unordered_map>
 #include <vector>
 #include <tr1/memory>
+#include <tr1/functional>
 #include <boost/any.hpp>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
@@ -42,7 +43,7 @@ namespace j2 {
     typedef std::tr1::shared_ptr<Signal> SignalPtr;
 
 
-    // Forward declartion of EventRouter for Subscription
+    // Forward declaration of EventRouter for Subscription
     class EventRouter;
 
     /**
@@ -67,7 +68,7 @@ namespace j2 {
      */
     // Note: EVENT_ROUTER template parameter is used here is used because of circular
     // dependency between EventRouter and Subscription
-    template <typename T=boost::any, typename EVENT_ROUTER = EventRouter>
+    template <typename T=boost::any, class EVENT_ROUTER = EventRouter>
     class Subscription {
     private:
         typedef std::vector<boost::signals::connection> connection_list;
@@ -165,11 +166,23 @@ namespace j2 {
         std::vector<boost::signals::connection> _connections;
     };
 
+    template <class EVENT_ROUTER>
+    class DefaultDeliveryPolicy {
+    public:
+        void operator()(EVENT_ROUTER& router,
+                        const std::string& name,
+                        const boost::any value) {
+            router.deliver(name, value);
+        }
+    };
+
+
     /**
      * @brief Publish/Subscribe mechanism for sending/receiving events.
      *
      **/
     class EventRouter {
+    protected:
     public:
         /**
          * @brief Get the default instance of the EventRouter.
@@ -179,14 +192,33 @@ namespace j2 {
          * for example in unit tests.
          */
         static EventRouter* instance();
+    public:
+        typedef std::tr1::function<void (EventRouter&, const std::string&, const boost::any)> DeliveryPolicy;
 
     public:
+        EventRouter(DeliveryPolicy policy=DefaultDeliveryPolicy<EventRouter>()) : 
+            _delivery_policy(policy) { }
+
         /**
-         * @brief Publish an event of the given name with a value.
+         * @brief Publish an event of the given name with a value according to the
+         * configured publication policy.
+         *
          * @param name name of the event
          * @param value value (must match type used in subscription).
          */
-        void publish(const std::string& name, const boost::any value);
+        void publish(const std::string& name, const boost::any value) {
+            _delivery_policy(*this, name, value);
+        }
+
+        /**
+         * @brief Deliver an event of the given name with a value.
+         *
+         * 
+         * @param name name of the event
+         * @param value value (must match type used in subscription).
+         */
+        void deliver(const std::string& name, const boost::any value);
+
 
         /**
          * @brief Create a subcription for a given event.
@@ -236,7 +268,8 @@ namespace j2 {
         static EventRouter* default_instance; 
 
     private:
-        std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;        
+        std::tr1::unordered_map<std::string, SignalPtr> _subscriptions;
+        DeliveryPolicy _delivery_policy;
     };
 
     

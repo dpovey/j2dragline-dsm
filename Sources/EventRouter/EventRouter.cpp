@@ -10,7 +10,7 @@ EventRouter* EventRouter::instance() {
     return EventRouter::default_instance;
 }
 
-void EventRouter::publish(const std::string& name, const boost::any value) {
+void EventRouter::deliver(const std::string& name, const boost::any value) {
     (*signal_for(name))(name, value);
 }
 
