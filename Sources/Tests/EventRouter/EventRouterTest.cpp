@@ -82,7 +82,7 @@ TEST(EventRouter, can_use_queueing_delivery_policy) {
     router.publish("int", EXPECTED_INT); 
     EXPECT_NE(EXPECTED_STRING, byref_string);
     EXPECT_NE(EXPECTED_INT, byref);
-    // Delivery all messages
+    // Deliver all messages
     while (queueing_policy.deliver());
     EXPECT_EQ(EXPECTED_STRING, byref_string);
     EXPECT_EQ(EXPECTED_INT, byref);    
