@@ -15,7 +15,7 @@ void EventRouter::deliver(const std::string& name, const boost::any value) {
 }
 
 Subscription<> EventRouter::subscribe(const std::string& name,
-                                      boost::function2<void, const std::string, boost::any> callback) {
+                                      std::tr1::function<void (const std::string&, boost::any)> callback) {
     return Subscription<>(*this,
                           name,
                           signal_for(name)->connect(callback));

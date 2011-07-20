@@ -1,14 +1,12 @@
 #include <string>
 #include <memory>
-#include <tr1/unordered_map>
 #include <vector>
 #include <tr1/memory>
 #include <tr1/functional>
+#include <tr1/unordered_map>
 #include <boost/any.hpp>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
-#include <boost/function.hpp>
-#include <boost/bind/protect.hpp>
 
 #ifndef _EVENT_ROUTER_H
 #define _EVENT_ROUTER_H
@@ -21,7 +19,7 @@ namespace j2 {
     template <typename T> struct ANY_FUNC_ADAPTOR {
         static void ADAPT(const std::string& name,
                           const boost::any value, 
-                          boost::function2<void, const std::string&, T> func) {
+                          std::tr1::function<void (const std::string&, T)> func) {
             func(name, boost::any_cast<T>(value));
         }
     };
@@ -118,8 +116,8 @@ namespace j2 {
          * @param func callback function to invoke
          * @return a reference to the @c Subscription to allow chaining
          **/
-        Subscription& deliver_with(boost::function2<void, const std::string&, T> func) {
-            return adapt< boost::function2<void, const std::string&, T> >(ANY_FUNC_ADAPTOR<T>::ADAPT, func);
+        Subscription& deliver_with(std::tr1::function<void (const std::string&, T)> func) {
+                return adapt< std::tr1::function<void (const std::string&, T)> >(ANY_FUNC_ADAPTOR<T>::ADAPT, func);
         }
 
         /**
@@ -151,7 +149,9 @@ namespace j2 {
     private:
         // Template used in adapting callback/ptr assignment
         template <typename DEST>
-        Subscription& adapt(boost::function3<void, const std::string&, const boost::any, DEST> func,
+        Subscription& adapt(std::tr1::function<void (const std::string&, 
+                                                     const boost::any,
+                                                     DEST)> func,
                             DEST dest) {
             SignalPtr signal = _event_router.signal_for(_name);
             boost::signals::connection connection = 
@@ -257,7 +257,8 @@ namespace j2 {
          * @return a @c Subscription object bound to the generic callback
          **/
         Subscription<> subscribe(const std::string& name,
-                                 boost::function2<void, const std::string, boost::any> callback);
+                                 std::tr1::function<void (const std::string&,
+                                                          const boost::any)> callback);
 
         /**
          * @brief Return the boost signal used for event delivery for the corresponding name.
