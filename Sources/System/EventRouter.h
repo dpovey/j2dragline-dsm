@@ -78,7 +78,7 @@ namespace j2 {
                      const std::string& name,
                      boost::signals::connection connection) :
             _event_router(parent),
-            _name(name) { 
+            _name(name) {
             _connections.push_back(connection);
         }
 
@@ -167,57 +167,7 @@ namespace j2 {
         const std::string _name;
         std::vector<boost::signals::connection> _connections;
     };
-
-    template <class EVENT_ROUTER>
-    class ImmediateDeliveryPolicy {
-    public:
-        void operator()(EVENT_ROUTER& router,
-                        const std::string& name,
-                        const boost::any value) {
-            router.deliver(name, value);
-        }
-    };
-
     
-
-    template <class EVENT_ROUTER=EventRouter>
-    class QueueingDeliveryPolicy {
-    public:
-        struct Event {
-            Event(EVENT_ROUTER& router, const std::string& name, const boost::any value) :
-                router(router),
-                name(name),
-                value(value) { }
-                
-            EVENT_ROUTER& router;
-            const std::string& name;
-            const boost::any value;            
-            
-            void deliver() {
-                router.deliver(name, value);
-            }
-        };
-
-    public:
-        void operator()(EVENT_ROUTER& router,
-                        const std::string& name,
-                        const boost::any value) {
-            _queue.push(Event(router, name, value));
-        }
-
-        bool deliver() {
-            if (_queue.empty()) return false;
-            _queue.front().deliver();
-            return true;
-        }
-
-    private:
-        std::queue<Event> _queue;
-    };
-
-
-    typedef ImmediateDeliveryPolicy<EventRouter> DefaultDeliveryPolicy;
-
 
     /**
      * @brief Publish/Subscribe mechanism for sending/receiving events.
@@ -225,6 +175,9 @@ namespace j2 {
      **/
     class EventRouter {
     protected:
+        static void immediate_delivery(EventRouter& router,
+                                       const std::string& name,
+                                       const boost::any value);
     public:
         /**
          * @brief Get the default instance of the EventRouter.
@@ -234,12 +187,14 @@ namespace j2 {
          * for example in unit tests.
          */
         static EventRouter* instance();
+
     public:
         typedef std::tr1::function<void (EventRouter&, const std::string&, const boost::any)> DeliveryPolicy;
 
     public:
-        EventRouter(DeliveryPolicy policy=DefaultDeliveryPolicy()) : 
-            _deliver(policy) { }
+        EventRouter() : _deliver(immediate_delivery) { }
+       
+        EventRouter(DeliveryPolicy policy) : _deliver(policy) { }
 
         /**
          * @brief Publish an event of the given name with a value according to the
@@ -315,7 +270,58 @@ namespace j2 {
         DeliveryPolicy _deliver;
     };
 
+    inline void EventRouter::immediate_delivery(EventRouter& router,
+                                                       const std::string& name,
+                                                       const boost::any value) {
+        router.deliver(name, value);
+    }
     
+    class QueueingDeliveryPolicy {
+    public:
+        class Event {
+        public:
+            Event(EventRouter& router, const std::string& name, const boost::any value) :
+                router(router),
+                name(name),
+                value(value) { }
+                
+            EventRouter& router;
+            const std::string name;
+            const boost::any value;            
+            
+            void deliver() {
+                router.deliver(name, value);
+            }
+        };
+
+    public:
+        QueueingDeliveryPolicy() : 
+            _queue(new std::queue<Event> ) { }
+
+        void operator()(EventRouter& router,
+                        const std::string& name,
+                        const boost::any value) {
+            _queue->push(Event(router, name, value));
+            assert(!empty());
+        }
+        
+        bool deliver() {
+            if (_queue->empty()) return false;
+            _queue->front().deliver();
+            _queue->pop();
+            return true;
+        }
+
+        int size() const { return _queue->size(); }
+
+        bool empty() const { return _queue->empty(); }
+        
+    private:
+        std::tr1::shared_ptr< std::queue<Event> > _queue;
+    };
+
+
+
 
 } // namespace j2
 

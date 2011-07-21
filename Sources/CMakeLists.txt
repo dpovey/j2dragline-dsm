@@ -10,20 +10,20 @@ include_directories(
   ${PROJECT_BINARY_DIR}
   Util
   Modbus
-  EventRouter
+  System
 )
 
-find_package(BOOST REQUIRED)
-set (BOOST_LIBS boost_signals)
+find_package(Boost REQUIRED)
+set (Boost_LIBS boost_signals)
 add_subdirectory (Config)
-add_subdirectory (EventRouter)
+add_subdirectory (System)
 add_subdirectory (Doc)
 add_subdirectory (Tests)
 link_directories(${Boost_LIBRARY_DIRS})
 add_executable (dsm main.cpp)
 set (J2DRAGLINE_LIBS 
-	EventRouter 
-	${BOOST_LIBS} 
+	System 
+	${Boost_LIBS} 
 	CACHE J2Dragline Libraries)
 target_link_libraries(dsm ${J2DRAGLINE_LIBS})
 include_directories(${Boost_INCLUDE_DIR})
