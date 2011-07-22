@@ -66,8 +66,9 @@ TEST(EventRouter, can_route_between_routers) {
 }
 
 TEST(EventRouter, can_use_queueing_delivery_policy) {
-    QueueingDeliveryPolicy queueing_policy;
-    EventRouter router(std::tr1::ref(queueing_policy));
+    EventQueue* queue = new EventQueue;
+    QueueingDeliveryPolicy policy(queue);
+    EventRouter router(policy);
     std::string EXPECTED_STRING = "Hello World";
     int EXPECTED_INT = 99;
     int byref = 0;
@@ -83,12 +84,12 @@ TEST(EventRouter, can_use_queueing_delivery_policy) {
         .assign_to(&byref)
         .assign_to(shared_ptr_int);
     router.publish("int", EXPECTED_INT); 
-    EXPECT_FALSE(queueing_policy.empty());
-    EXPECT_EQ(2, queueing_policy.size());
+    EXPECT_FALSE(queue->empty());
+    EXPECT_EQ(2, queue->size());
     EXPECT_NE(EXPECTED_STRING, byref_string);
     EXPECT_NE(EXPECTED_INT, byref);
     // Deliver all messages
-    while (queueing_policy.deliver());
+    while (queue->deliver());
     EXPECT_EQ(EXPECTED_STRING, byref_string);
     EXPECT_EQ(EXPECTED_INT, byref);    
     EXPECT_EQ(EXPECTED_INT, *shared_ptr_int);

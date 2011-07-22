@@ -271,57 +271,61 @@ namespace j2 {
     };
 
     inline void EventRouter::immediate_delivery(EventRouter& router,
-                                                       const std::string& name,
-                                                       const boost::any value) {
+                                                const std::string& name,
+                                                const boost::any value) {
         router.deliver(name, value);
     }
-    
-    class QueueingDeliveryPolicy {
-    public:
-        class Event {
-        public:
-            Event(EventRouter& router, const std::string& name, const boost::any value) :
-                router(router),
-                name(name),
-                value(value) { }
-                
-            EventRouter& router;
-            const std::string name;
-            const boost::any value;            
-            
-            void deliver() {
-                router.deliver(name, value);
-            }
-        };
 
+    class Event {
     public:
-        QueueingDeliveryPolicy() : 
-            _queue(new std::queue<Event> ) { }
-
-        void operator()(EventRouter& router,
-                        const std::string& name,
-                        const boost::any value) {
-            _queue->push(Event(router, name, value));
-            assert(!empty());
-        }
+        Event(EventRouter& router, const std::string& name, const boost::any value) :
+            _router(router),
+            _name(name),
+            _value(value) { }
         
-        bool deliver() {
-            if (_queue->empty()) return false;
-            _queue->front().deliver();
-            _queue->pop();
-            return true;
+        void deliver() {
+            _router.deliver(_name, _value);
         }
 
-        int size() const { return _queue->size(); }
-
-        bool empty() const { return _queue->empty(); }
-        
     private:
-        std::tr1::shared_ptr< std::queue<Event> > _queue;
+        EventRouter& _router;
+        const std::string _name;
+        const boost::any _value;            
     };
 
+    class EventQueue {
+    public:
+        void enqueue(EventRouter& router, const std::string& name, const boost::any& value) {
+            _queue.push(Event(router, name, value));
+        }
 
+        bool deliver() {
+            if (_queue.empty()) return false;
+            _queue.front().deliver();
+            _queue.pop();
+            return true;
+        }
+        
+        int size() const { return _queue.size(); }
+        
+        bool empty() const { return _queue.empty(); }
+    private:
+        std::queue<Event>_queue;
+    };
 
+    class QueueingDeliveryPolicy {
+    public:
+        QueueingDeliveryPolicy(EventQueue* queue) : _queue(queue) { }
+        
+        void operator()(EventRouter& router,
+                        const std::string& name,
+                        const boost::any& value) {
+            _queue->enqueue(router, name, value);
+        }
+        
+    private:
+        std::tr1::shared_ptr< EventQueue > _queue;
+    };
 
 } // namespace j2
 

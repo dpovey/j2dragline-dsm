@@ -178,7 +178,6 @@ namespace j2 {
         virtual uint8_t readByte() {
             if (hasError()) return 0;
             if (isEof()) {
-                puts("eof");
                 // Attempted to read past end of vector
                 error(true);
                 return 0;

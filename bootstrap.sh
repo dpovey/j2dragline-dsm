@@ -9,9 +9,9 @@ BUILDDIR=${J2DRAGLINE}/Build
 # Dependencies
 [ -d ${BUILDDIR}/Dependencies ] || mkdir -p ${BUILDDIR}/Dependencies
 (cd ${BUILDDIR}/Dependencies; 
- cmake ${J2DRAGLINE}/Dependencies -DJ2DRAGLINE_BINARY_DIR=${BUILDDIR} &&
+ cmake ${J2DRAGLINE}/Dependencies -DJ2DRAGLINE_BINARY_DIR=${BUILDDIR} -G "Unix Makefiles"&&
  make)
 
 # Main
-(cd ${BUILDDIR}; cmake ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR} -DCMAKE_BUILD_TYPE:STRING=Debug)
+(cd ${BUILDDIR}; cmake -G "Unix Makefiles" ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR} -DCMAKE_BUILD_TYPE:STRING=Debug)
 echo "(cd ${BUILDDIR}; make)"

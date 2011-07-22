@@ -26,4 +26,3 @@ SignalPtr EventRouter::signal_for(const std::string& name) {
     if (result) return result;
     return (_subscriptions[name] = SignalPtr(new Signal()));
 }
-
