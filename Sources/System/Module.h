@@ -16,6 +16,13 @@ namespace j2 {
             _local(QueueingDeliveryPolicy(_queue)) {
         }
 
+        Module(std::tr1::shared_ptr<EventRouter> central) :
+            _central(central), 
+            _queue(new EventQueue), 
+            _local(QueueingDeliveryPolicy(_queue)) {
+        }
+
+
         template <typename T>
         void bind_value(const std::string& name, T* value) {
             _local.subscribe<T>(name).assign_to(value);
@@ -29,7 +36,7 @@ namespace j2 {
             _central->route(name, _local);
         }
 
-        int process(int n=1) {
+        virtual int process(int n=1) {
             int nr_to_process = std::min(n, _queue->size());
             for (int i=0; i < nr_to_process; i++) {
                 _queue->deliver();
@@ -37,9 +44,15 @@ namespace j2 {
             return nr_to_process;
         }
 
-        void process_all() {
-            process(_queue->size());
+        void process_one() { process(1); }
+
+        int process_all() {
+            return process(_queue->size());
         }
+        
+        virtual bool is_ready() { return !_queue->empty(); }
+
+        virtual bool is_idle() { return _queue->empty(); }
 
     protected:
         std::tr1::shared_ptr<EventRouter> _central;
