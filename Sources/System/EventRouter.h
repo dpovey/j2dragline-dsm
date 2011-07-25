@@ -26,6 +26,20 @@ namespace j2 {
         }
     };
 
+    // Template to adapt a callback function to a specific type to a
+    // callback that can take boost::any and cast it.  This is used
+    // by Subscription::deliver_with
+    template <typename T> struct ANY_FUNC_ADAPTOR_NO_NAME {
+        static void ADAPT(const std::string& name,
+                          const boost::any value, 
+                          std::tr1::function<void (T)> func) {
+            puts("Called any func_adaptor_no_name");
+            printf("for name: %s\n", name.c_str());
+            func(boost::any_cast<T>(value));
+        }
+    };
+
+
     // Template to adapt a callback function that takes a ptr 
     // (actually any class that supports unary *) to a 
     // callback that can take boost::any and cast it.  This is used
@@ -121,6 +135,16 @@ namespace j2 {
         Subscription& deliver_with(std::tr1::function<void (const std::string&, T)> func) {
                 return adapt< std::tr1::function<void (const std::string&, T)> >(ANY_FUNC_ADAPTOR<T>::ADAPT, func);
         }
+
+        /** 
+         * @brief When events are received call the given callback function.
+         * @param func callback function to invoke
+         * @return a reference to the @c Subscription to allow chaining
+         **/
+        Subscription& deliver_with2(std::tr1::function<void (T)> func) {
+            return adapt< std::tr1::function<void (T)> >(ANY_FUNC_ADAPTOR_NO_NAME<T>::ADAPT, func);
+        }
+
 
         /**
          * @brief temporarily block delivery of events for this @c Subscription.
@@ -316,6 +340,8 @@ namespace j2 {
     class QueueingDeliveryPolicy {
     public:
         QueueingDeliveryPolicy(EventQueue* queue) : _queue(queue) { }
+
+        QueueingDeliveryPolicy(std::tr1::shared_ptr<EventQueue> queue) : _queue(queue) { }
         
         void operator()(EventRouter& router,
                         const std::string& name,

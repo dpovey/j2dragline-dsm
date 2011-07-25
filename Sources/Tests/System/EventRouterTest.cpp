@@ -17,6 +17,11 @@ void receive_int(const std::string name, int value) {
     EXPECT_EQ(99, value);
 }
 
+void receive_int_no_name(int value) {
+    EXPECT_EQ(99, value);
+}
+
+
 TEST(EventRouter, can_pub_and_sub) {
     EventRouter router;
     std::string EXPECTED_STRING = "Hello World";
@@ -31,6 +36,7 @@ TEST(EventRouter, can_pub_and_sub) {
     router.publish("string", EXPECTED_STRING);
     router.subscribe<int>("int")
         .deliver_with(receive_int)
+        .deliver_with2(receive_int_no_name)
         .assign_to(&byref)
         .assign_to(shared_ptr_int);
     router.publish("int", EXPECTED_INT); 
