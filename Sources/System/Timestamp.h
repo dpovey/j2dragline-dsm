@@ -1,12 +1,14 @@
 #ifndef _TIMESTAMP_H
 #define _TIMESTAMP_H
 
+#include <cassert>
+#include <boost/operators.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/chrono.hpp>
 
 namespace j2 {
 
-    class Timestampable {
+    class Timestampable : public boost::operators< Timestampable > {
         typedef boost::chrono::high_resolution_clock Clock;
         typedef Clock::time_point Timestamp;
     public:
@@ -15,12 +17,22 @@ namespace j2 {
         Timestampable (Timestamp timestamp) : 
             _timestamp(timestamp) { }        
         Timestamp timestamp() const { return _timestamp; }
+
+        bool operator==(const Timestampable& other) const {
+            return timestamp() == other.timestamp();
+        }
+
+        bool operator<(const Timestampable& other) const {
+            return timestamp() < other.timestamp();
+        }
+
     protected:
         Timestamp _timestamp;
     };
 
     template <typename T>
-    class Timestamped : public Timestampable {
+    class Timestamped : public Timestampable, 
+                        public boost::operators< Timestamped<T> > {
     public:
         typedef T value_type;
         typedef T& reference;
@@ -55,8 +67,12 @@ namespace j2 {
         value_type _value;
     };
 
-
-    template <typename T>
+    /**
+     * Represents a synchronized set of timestamped values 
+     */
+    template <int TOLERANCE = 0,
+              class DURATION = boost::chrono::milliseconds,
+              typename T = j2::Timestampable>
     class TimestampedSet {
     public:
         void add(T& timestamp) {
@@ -79,33 +95,19 @@ namespace j2 {
         }
 
         template <class Rep, class Period>
-        bool all_same(boost::chrono::duration<Rep, Period> tolerance) const {
+        bool synchronized(boost::chrono::duration<Rep, Period> tolerance) const {
             return (max().timestamp() - min().timestamp()) <= tolerance;
         }
 
-        bool all_same() {
-            return all_same(boost::chrono::milliseconds(0));
+        bool synchronized() {
+            return synchronized(DURATION(TOLERANCE));
         }
 
     private:
-
-        struct ptr_to_timestamp_less_than
-        {
-            const bool operator()(const T *a, const T * b) const {
-                // check for 0
-                if (a == 0) {
-                    return b != 0; // if b is also 0, then they are equal, hence a is not < than b
-                } else if (b == 0) {
-                    return false;
-                } else {
-                    return a->timestamp() < b->timestamp();
-                }
-            }
-        };
-
         void sort() const { 
             std::sort(_timestamps.begin(), _timestamps.end(), 
-                      typename TimestampedSet::ptr_to_timestamp_less_than()); }
+                      *boost::lambda::_1 < *boost::lambda::_2);
+        }
         mutable std::vector<T*> _timestamps;
     };
     
