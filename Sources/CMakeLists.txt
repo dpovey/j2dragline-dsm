@@ -14,20 +14,21 @@ include_directories(
 )
 
 find_package(Boost REQUIRED)
-#set (Boost_LIBS boost_signals boost_thread-mt)
+set (Boost_LIBS boost_signals boost_thread-mt boost_chrono boost_system)
+include_directories(${Boost_INCLUDE_DIR})
 add_subdirectory (Config)
 add_subdirectory (System)
+add_subdirectory (Geometry)
 add_subdirectory (Doc)
 add_subdirectory (Tests)
 link_directories(${Boost_LIBRARY_DIRS})
 add_executable (dsm main.cpp)
 set (J2DRAGLINE_LIBS 
-	System 
-        boost_signals
-        boost_thread-mt
-	CACHE J2Dragline Libraries)
+    System
+    Geometry
+    ${Boost_LIBS}
+    CACHE J2Dragline Libraries)
 target_link_libraries(dsm ${J2DRAGLINE_LIBS})
-include_directories(${Boost_INCLUDE_DIR})
 
 # Make sure the build is out of source
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
