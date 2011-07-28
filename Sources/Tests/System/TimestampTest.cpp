@@ -28,12 +28,12 @@ static void random_jitter(int max_jitter_ms) {
 }
 
 TEST(Timestamp, can_create_timestamped_set) {
-    TimestampedSet<20, milliseconds> accurate_set;
+    TimestampedSet<50, milliseconds> accurate_set;
     TimestampedSet<10, seconds> loose_set;
     Timestamped<int> x(1);
-    random_jitter(2);
+    random_jitter(1);
     Timestamped<float> y(1.0);
-    random_jitter(2);
+    random_jitter(1);
     Timestamped<double> z(1.0);
     accurate_set += x, y, z;
     loose_set += x, y, z;
@@ -41,7 +41,7 @@ TEST(Timestamp, can_create_timestamped_set) {
     EXPECT_TRUE(loose_set.is_synchronized());
 
     // Sleep for a second then update timestamp for y
-    sleep_ms(50);
+    sleep_ms(100);
     y = Timestamped<float>(1.0);
 
     EXPECT_FALSE(accurate_set.is_synchronized());

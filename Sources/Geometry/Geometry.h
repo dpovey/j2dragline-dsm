@@ -59,9 +59,6 @@ namespace j2 {
         double boom_length;
         double boom_foot_height;
         double boom_foot_distance;
-
-        // Internal angles of ropes etc
-        //double angle[10];
     };
 
     class GeometryManager : public Module {
@@ -75,12 +72,8 @@ namespace j2 {
             bind_value("/sensor/inclinometer/pitch", &_pitch);
             bind_value("/config/geometry", &_config);
 
-            _set.add(_hoist_motion)
-                .add(_drag_motion)
-                .add(_swing_motion)
-                .add(_hoist_sheave)
-                .add(_drag_sheave)
-                .add(_pitch);
+            _set +=_hoist_motion, _drag_motion, _swing_motion, _hoist_sheave,
+                _drag_sheave, _pitch;
         }
 
         void update();

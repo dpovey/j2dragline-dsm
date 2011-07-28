@@ -15,6 +15,10 @@ namespace j2 {
 
         Timestamp virtual timestamp() const = 0;
 
+        Timestamp virtual min() const = 0;
+
+        Timestamp virtual max() const = 0;       
+
         bool operator==(const Timestampable& other) {
             return timestamp() == other.timestamp();
         }
@@ -36,15 +40,30 @@ namespace j2 {
             _timestamps.push_back(&timestamp);
             return *this;
         }
+        
+        struct smallest {
+            bool operator()(const T* a, const T* b) const {
+                return a->min() < b->min();
+            }
+        };
 
-        T& min() const { 
-            sort();
-            return *_timestamps.front();
+        struct largest {
+            bool operator()(const T* a, const T* b) const {
+                return a->max() < b->max();
+            }
+        };
+
+
+        Timestampable::Timestamp min() const { 
+            if (_timestamps.empty()) return Timestampable::Timestamp::min();
+            return (*std::min_element(_timestamps.begin(), _timestamps.end(), 
+                                      typename TimestampedSet::smallest()))->timestamp();
         }
 
-        T& max() const { 
-            sort();
-            return *_timestamps.back();
+        Timestampable::Timestamp max() const { 
+            if (_timestamps.empty()) return Timestampable::Timestamp::min();
+            return (*std::max_element(_timestamps.begin(), _timestamps.end(), 
+                                      typename TimestampedSet::largest()))->timestamp();
         }
 
         TimestampedSet& operator+=(T& timestamped) {
@@ -64,11 +83,10 @@ namespace j2 {
 
         template <class Rep, class Period>
         bool is_synchronized(boost::chrono::duration<Rep, Period> tolerance) const {
-            sort();
-            Timestampable::Timestamp min = _timestamps.front()->timestamp();
-            Timestampable::Timestamp max = _timestamps.back()->timestamp();
-            return min > Timestampable::Timestamp::min() &&
-                (max - min) <= tolerance;
+            Timestampable::Timestamp min_timestamp = min();
+            Timestampable::Timestamp max_timestamp = max();
+            return min_timestamp > Timestampable::Timestamp::min() &&
+                (max_timestamp - min_timestamp) <= tolerance;
         }
 
         bool is_synchronized() const {
@@ -77,7 +95,7 @@ namespace j2 {
 
         // Returns the (most recent) timestamp for this set
         virtual typename Timestampable::Timestamp timestamp() const {
-            return max().timestamp();
+            return max();
         }
 
     private:
@@ -126,6 +144,10 @@ namespace j2 {
         }
 
         Timestampable::Timestamp virtual timestamp() const { return _timestamp; }
+
+        Timestamp virtual min() const { return timestamp(); }
+
+        Timestamp virtual max() const { return timestamp(); }
 
     protected:
         Timestampable::Timestamp _timestamp;
