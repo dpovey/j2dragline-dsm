@@ -1,0 +1,25 @@
+
+class DraglineGeometry : public Geometry
+{
+public:
+  bool update();
+  bool beyondBoomPt();
+  bool valid();
+
+  float hoistRopeAngle();
+  float dragRopeAngle();
+  float hoistDistToCOG();
+  float dragDistToCOG();
+  float bucketHeight();
+  float bucketReach();
+  float boomAngle();
+  float boomLength();
+  float boomFootHight();
+  float boomFootDistance();
+  float footAngle();
+
+protected:
+  virtual bool startConfigurationImpl();
+  virtual bool completeConfigurationImpl(geometryConfig_t& config);
+  virtual void clearConfigurationImpl();
+};
