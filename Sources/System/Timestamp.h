@@ -47,6 +47,16 @@ namespace j2 {
             return *_timestamps.back();
         }
 
+        TimestampedSet& operator+=(T& timestamped) {
+            add(timestamped);
+            return *this;
+        }
+
+        TimestampedSet& operator,(T& timestamped) {
+            add(timestamped);
+            return *this;
+        }
+
         template <class Rep, class Period>
         boost::chrono::duration<Rep, Period> jitter() const {
             return boost::chrono::duration<Rep,Period>(max().timestamp() - min().timestamp());
