@@ -1,3 +1,4 @@
+OUTPUT=${OUTPUT:-"Unix Makefiles"}
 # Bootstrap the build
 topdir() {
     (cd "$(pwd)/$(dirname $0)"; pwd)
@@ -13,5 +14,5 @@ BUILDDIR=${J2DRAGLINE}/Build
  make)
 
 # Main
-(cd ${BUILDDIR}; cmake -G "Unix Makefiles" ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR} -DCMAKE_BUILD_TYPE:STRING=Debug)
+(cd ${BUILDDIR}; cmake -G "$OUTPUT" ${J2DRAGLINE}/Sources -DGTEST_ROOT=${BUILDDIR} -DCMAKE_BUILD_TYPE:STRING=Debug)
 echo "(cd ${BUILDDIR}; make)"

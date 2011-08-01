@@ -78,7 +78,7 @@ namespace j2 {
 
         template <class Rep, class Period>
         boost::chrono::duration<Rep, Period> jitter() const {
-            return boost::chrono::duration<Rep,Period>(max().timestamp() - min().timestamp());
+            return boost::chrono::duration<Rep,Period>(max() - min());
         }
 
         template <class Rep, class Period>
@@ -99,11 +99,7 @@ namespace j2 {
         }
 
     private:
-        void sort() const { 
-            std::sort(_timestamps.begin(), _timestamps.end(),
-                      *boost::lambda::_1 < *boost::lambda::_2);
-        }
-        mutable std::vector<T*> _timestamps;
+        std::vector<T*> _timestamps;
     };
 
     template <typename T>

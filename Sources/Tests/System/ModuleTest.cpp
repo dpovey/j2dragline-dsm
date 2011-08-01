@@ -10,7 +10,6 @@ using namespace std;
 class TestModule : public Module {
 public:
     void setString(const std::string& value) {
-        puts("Called set string value");
         stringValue = value;
     }
     

@@ -33,8 +33,6 @@ namespace j2 {
         static void ADAPT(const std::string& name,
                           const boost::any value, 
                           std::tr1::function<void (T)> func) {
-            puts("Called any func_adaptor_no_name");
-            printf("for name: %s\n", name.c_str());
             func(boost::any_cast<T>(value));
         }
     };

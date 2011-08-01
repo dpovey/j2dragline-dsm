@@ -40,13 +40,10 @@ TEST(Timestamp, can_create_timestamped_set) {
     EXPECT_TRUE(accurate_set.is_synchronized());
     EXPECT_TRUE(loose_set.is_synchronized());
 
-    // Sleep for a second then update timestamp for y
     sleep_ms(100);
     y = Timestamped<float>(1.0);
-
     EXPECT_FALSE(accurate_set.is_synchronized());
     EXPECT_TRUE(loose_set.is_synchronized());
-    
 }
 
 TEST(Timestamp, can_nest_timestamped_set) {
